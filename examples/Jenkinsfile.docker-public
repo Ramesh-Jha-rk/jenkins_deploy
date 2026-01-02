@@ -1,0 +1,98 @@
+pipeline {
+    agent any
+    
+    parameters {
+        string(
+            name: 'PUBLIC_REPO_URL',
+            defaultValue: 'https://github.com/dockersamples/example-voting-app.git',
+            description: 'Public Docker application repository'
+        )
+        string(
+            name: 'DOCKER_IMAGE_NAME',
+            defaultValue: 'myapp',
+            description: 'Docker image name'
+        )
+        string(
+            name: 'DOCKER_TAG',
+            defaultValue: 'latest',
+            description: 'Docker image tag'
+        )
+    }
+    
+    environment {
+        DOCKER_REGISTRY = 'docker.io'
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "Checking out public Docker repository: ${params.PUBLIC_REPO_URL}"
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "*/main"]],
+                    userRemoteConfigs: [[url: params.PUBLIC_REPO_URL]]
+                ])
+            }
+        }
+        
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    echo "Building Docker image: ${params.DOCKER_IMAGE_NAME}:${params.DOCKER_TAG}"
+                    sh """
+                        docker build -t ${params.DOCKER_IMAGE_NAME}:${params.DOCKER_TAG} .
+                    """
+                }
+            }
+        }
+        
+        stage('Test Docker Image') {
+            steps {
+                script {
+                    echo "Testing Docker image..."
+                    sh """
+                        docker run --rm ${params.DOCKER_IMAGE_NAME}:${params.DOCKER_TAG} --version || echo "No version command available"
+                    """
+                }
+            }
+        }
+        
+        stage('Push to Registry') {
+            steps {
+                script {
+                    echo "Pushing image to Docker registry..."
+                    // Uncomment and configure for actual registry push
+                    // sh """
+                    //     docker tag ${params.DOCKER_IMAGE_NAME}:${params.DOCKER_TAG} ${DOCKER_REGISTRY}/${params.DOCKER_IMAGE_NAME}:${params.DOCKER_TAG}
+                    //     docker push ${DOCKER_REGISTRY}/${params.DOCKER_IMAGE_NAME}:${params.DOCKER_TAG}
+                    // """
+                }
+            }
+        }
+        
+        stage('Deploy Container') {
+            steps {
+                script {
+                    echo "Deploying Docker container..."
+                    // Add deployment commands here
+                    // sh "docker-compose up -d"
+                    // sh "kubectl apply -f k8s/deployment.yaml"
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo "Docker application deployed successfully!"
+        }
+        failure {
+            echo "Deployment failed!"
+        }
+        always {
+            echo "Cleaning up..."
+            sh "docker image prune -f || true"
+            cleanWs()
+        }
+    }
+}

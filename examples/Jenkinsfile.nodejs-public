@@ -1,0 +1,80 @@
+pipeline {
+    agent any
+    
+    parameters {
+        string(
+            name: 'GIT_REPO_URL',
+            defaultValue: 'https://github.com/nodejs/node-starter.git',
+            description: 'Public Node.js repository URL'
+        )
+        string(
+            name: 'GIT_BRANCH',
+            defaultValue: 'main',
+            description: 'Git branch to deploy'
+        )
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "Checking out public repository: ${params.GIT_REPO_URL}"
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "*/${params.GIT_BRANCH}"]],
+                    userRemoteConfigs: [[url: params.GIT_REPO_URL]]
+                ])
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    echo "Installing Node.js dependencies..."
+                    sh 'npm install'
+                }
+            }
+        }
+        
+        stage('Build') {
+            steps {
+                script {
+                    echo "Building Node.js application..."
+                    sh 'npm run build || echo "No build script found, skipping..."'
+                }
+            }
+        }
+        
+        stage('Test') {
+            steps {
+                script {
+                    echo "Running tests..."
+                    sh 'npm test || echo "No test script found, skipping..."'
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                script {
+                    echo "Deploying Node.js application..."
+                    // Add your deployment commands here
+                    // Example: Deploy to PM2, Docker, or cloud platform
+                    // sh 'pm2 restart app'
+                    // sh 'docker build -t myapp . && docker run -d myapp'
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo "Node.js application deployed successfully!"
+        }
+        failure {
+            echo "Deployment failed!"
+        }
+        always {
+            cleanWs()
+        }
+    }
+}

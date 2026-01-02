@@ -1,0 +1,31 @@
+# Jenkins Deployment Configuration Examples
+
+## Public Repository Configuration
+public_repo:
+  type: public
+  url: "https://github.com/username/public-repo.git"
+  branch: main
+  environment: staging
+  credentials: none
+
+## Private Repository Configuration
+private_repo:
+  type: private
+  url: "https://github.com/username/private-repo.git"
+  branch: main
+  environment: staging
+  credentials: git-credentials-id
+
+## Production Deployment Configuration
+production:
+  environment: production
+  auto_deploy: false
+  approval_required: true
+  notification_email: "devops@example.com"
+
+## Staging Deployment Configuration
+staging:
+  environment: staging
+  auto_deploy: true
+  approval_required: false
+  notification_email: "dev-team@example.com"
