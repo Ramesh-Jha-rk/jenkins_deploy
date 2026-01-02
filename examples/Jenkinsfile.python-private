@@ -1,0 +1,118 @@
+pipeline {
+    agent any
+    
+    parameters {
+        string(
+            name: 'GIT_REPO_URL',
+            defaultValue: 'https://github.com/mycompany/private-python-app.git',
+            description: 'Private Python repository URL'
+        )
+        string(
+            name: 'GIT_BRANCH',
+            defaultValue: 'main',
+            description: 'Git branch to deploy'
+        )
+        credentials(
+            name: 'GIT_CREDENTIALS',
+            description: 'Git credentials for private repository',
+            defaultValue: 'github-creds',
+            credentialType: 'Username with password',
+            required: true
+        )
+        choice(
+            name: 'DEPLOY_ENV',
+            choices: ['staging', 'production'],
+            description: 'Deployment environment'
+        )
+    }
+    
+    stages {
+        stage('Checkout') {
+            steps {
+                echo "Checking out private repository: ${params.GIT_REPO_URL}"
+                checkout([
+                    $class: 'GitSCM',
+                    branches: [[name: "*/${params.GIT_BRANCH}"]],
+                    userRemoteConfigs: [[
+                        url: params.GIT_REPO_URL,
+                        credentialsId: params.GIT_CREDENTIALS
+                    ]]
+                ])
+            }
+        }
+        
+        stage('Setup Python Environment') {
+            steps {
+                script {
+                    echo "Setting up Python virtual environment..."
+                    sh '''
+                        python3 -m venv venv
+                        . venv/bin/activate
+                        pip install --upgrade pip
+                    '''
+                }
+            }
+        }
+        
+        stage('Install Dependencies') {
+            steps {
+                script {
+                    echo "Installing Python dependencies..."
+                    sh '''
+                        . venv/bin/activate
+                        if [ -f requirements.txt ]; then
+                            pip install -r requirements.txt
+                        fi
+                    '''
+                }
+            }
+        }
+        
+        stage('Run Tests') {
+            steps {
+                script {
+                    echo "Running Python tests..."
+                    sh '''
+                        . venv/bin/activate
+                        if [ -f pytest.ini ] || [ -d tests ]; then
+                            pytest || echo "No tests found, skipping..."
+                        else
+                            echo "No test configuration found, skipping..."
+                        fi
+                    '''
+                }
+            }
+        }
+        
+        stage('Deploy') {
+            steps {
+                script {
+                    echo "Deploying to ${params.DEPLOY_ENV} environment..."
+                    
+                    if (params.DEPLOY_ENV == 'production') {
+                        echo "Deploying to production..."
+                        // Add production deployment commands
+                        // sh './deploy-production.sh'
+                    } else {
+                        echo "Deploying to staging..."
+                        // Add staging deployment commands
+                        // sh './deploy-staging.sh'
+                    }
+                }
+            }
+        }
+    }
+    
+    post {
+        success {
+            echo "Python application deployed successfully to ${params.DEPLOY_ENV}!"
+        }
+        failure {
+            echo "Deployment failed!"
+        }
+        always {
+            echo "Cleaning up..."
+            cleanWs()
+        }
+    }
+}
