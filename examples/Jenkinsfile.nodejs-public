@@ -39,7 +39,7 @@ pipeline {
             steps {
                 script {
                     echo "Building Node.js application..."
-                    sh 'npm run build || echo "No build script found, skipping..."'
+                    sh 'npm run build || echo "Build failed or not configured, continuing..."'
                 }
             }
         }
@@ -48,7 +48,7 @@ pipeline {
             steps {
                 script {
                     echo "Running tests..."
-                    sh 'npm test || echo "No test script found, skipping..."'
+                    sh 'npm test || echo "Tests failed or not configured, continuing..."'
                 }
             }
         }
