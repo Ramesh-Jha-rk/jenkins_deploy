@@ -75,7 +75,7 @@ pipeline {
                     sh '''
                         . venv/bin/activate
                         if [ -f pytest.ini ] || [ -d tests ]; then
-                            pytest || echo "No tests found, skipping..."
+                            pytest || echo "Tests failed or not configured, continuing..."
                         else
                             echo "No test configuration found, skipping..."
                         fi
